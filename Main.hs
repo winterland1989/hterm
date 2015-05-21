@@ -13,6 +13,7 @@ import Control.Monad (forever)
 import System.Posix.Pty
 import System.Posix.IO (setFdOption, FdOption(..))
 import System.Directory (getHomeDirectory)
+import System.Environment (getArgs)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as B
 import qualified Data.Text as T
@@ -20,10 +21,30 @@ import Data.Text.Encoding as T
 import Data.Text.Read as T
 import Control.Concurrent (forkIO)
 
-
 main :: IO ()
-main = do
-    run 3000 $ websocketsOr defaultConnectionOptions socketServerApp staticServerApp
+main = getArgs >>= parse
+
+parse :: [String] -> IO ()
+parse ["-h"] = usage
+parse ["-v"] = version
+parse [] = parse ["8123", "bash"]
+parse (port:[]) = parse [port, "bash"]
+parse (port:sh:[]) = case parseTextNum $ T.pack port of
+    Just p  -> hterm p sh
+    Nothing -> usage
+parse _ = usage
+
+parseTextNum :: T.Text -> Maybe Int
+parseTextNum x = case T.decimal x of
+    Right (x', _) -> Just x'
+    _             -> Nothing
+
+usage   = putStrLn "Usage: hsync-server [-vh] [port] [shell]"
+version = putStrLn "hterm 0.1"
+
+hterm :: Int -> String -> IO ()
+hterm port sh = do
+    run port $ websocketsOr defaultConnectionOptions (socketServerApp sh) staticServerApp
 
 shellEnv :: IO [(String, String)]
 shellEnv = do
@@ -34,31 +55,28 @@ shellEnv = do
         ,   ("TERM"  , "xterm")
         ]
 
-initPty :: IO Pty
-initPty = do
+initPty :: String -> IO Pty
+initPty sh = do
     se <- shellEnv
-    (pty, hd) <- spawnWithPty (Just se) True "zsh" [] (100, 10)
+    (pty, hd) <- spawnWithPty (Just se) True sh [] (100, 10)
     attrs <- getTerminalAttributes pty
-    let attrs' = withCC (setModes attrs) (Erase, '\DEL')
-    setTerminalAttributes pty attrs' Immediately
+    setTerminalAttributes pty (setCCs attrs) Immediately
     return pty
   where
-    setModes :: (TerminalAttributes -> TerminalAttributes)
-    setModes = withModes [
-            ProcessInput
-        ,   NoFlushOnInterrupt
-        ,   CheckParity
+    setCCs = withCCs [
+            (Erase, '\DEL')
+        ,   (Kill , '\NAK')
         ]
-    withModes modes tty = foldl withoutMode tty modes
+    withCCs ccs tty = foldl withCC tty ccs
 
 staticServerApp :: Application
 staticServerApp = staticApp $(mkSettings mkEmbedded)
 
-socketServerApp :: PendingConnection -> IO () 
-socketServerApp pc = do
+socketServerApp :: String -> PendingConnection -> IO () 
+socketServerApp sh pc = do
     c <- acceptRequest pc
     forkPingThread c 30
-    pty <- initPty
+    pty <- initPty sh
     forkIO $ forever $ do
         msg <- receive c
         case msg of (DataMessage (Text m)) -> 
@@ -81,13 +99,17 @@ socketServerApp pc = do
                     Nothing   -> return ()
 
             'S' -> do
-                writePty pty $ BL.toStrict $ BL.tail input
-                print "WRITE PTY"
-                print input
+                let input' = BL.toStrict $ BL.tail input
+                writePty pty input' 
+                print "WRITE TO PTY"
+                print input'
+
+            _  -> return ()
     
     readFromPty :: Pty -> IO BL.ByteString
     readFromPty pty = do
         output <- readPty pty
+        print "READ FROM PTY"
         print output
         return $ BL.fromStrict output
 
@@ -97,7 +119,3 @@ socketServerApp pc = do
         ((Just w):(Just h):[]) -> Just (w, h)
         _                      -> Nothing
 
-    parseTextNum :: T.Text -> Maybe Int
-    parseTextNum x = case T.decimal x of
-        Right (x', _) -> Just x'
-        _             -> Nothing
