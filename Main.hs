@@ -39,7 +39,8 @@ initPty = do
     se <- shellEnv
     (pty, hd) <- spawnWithPty (Just se) True "zsh" [] (100, 10)
     attrs <- getTerminalAttributes pty
-    setTerminalAttributes pty (setModes attrs) Immediately
+    let attrs' = withCC (setModes attrs) (Erase, '\DEL')
+    setTerminalAttributes pty attrs' Immediately
     return pty
   where
     setModes :: (TerminalAttributes -> TerminalAttributes)
