@@ -12,6 +12,7 @@ import Network.WebSockets
 import Control.Monad (forever)
 import System.Posix.Pty
 import System.Posix.IO (setFdOption, FdOption(..))
+import System.Directory (getHomeDirectory)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as B
 import qualified Data.Text as T
@@ -22,26 +23,29 @@ import Control.Concurrent (forkIO)
 
 main :: IO ()
 main = do
-    (pty, hd) <- spawnWithPty (Just shellEnv) True "bash" [] (100, 10)
-    initPty pty
-    run 3000 $
-        websocketsOr defaultConnectionOptions (socketServerApp pty) staticServerApp
+    run 3000 $ websocketsOr defaultConnectionOptions socketServerApp staticServerApp
 
-shellEnv = [
-        ("SHELL" , "bash")
-    ,   ("TERM"  , "xterm-256color")
-    ,   ("HOME"  , "")
-    ]
+shellEnv :: IO [(String, String)]
+shellEnv = do
+    homeD <- getHomeDirectory
+    let homeEnv = ("HOME", homeD)
+    return $ homeEnv : [
+            ("SHELL" , "bash")
+        ,   ("TERM"  , "xterm")
+        ]
 
-initPty :: Pty -> IO ()
-initPty pty = do
+initPty :: IO Pty
+initPty = do
+    se <- shellEnv
+    (pty, hd) <- spawnWithPty (Just se) True "zsh" [] (100, 10)
     attrs <- getTerminalAttributes pty
     setTerminalAttributes pty (setModes attrs) Immediately
+    return pty
   where
     setModes :: (TerminalAttributes -> TerminalAttributes)
     setModes = withModes [
             ProcessInput
-        ,   ExtendedFunctions
+        ,   NoFlushOnInterrupt
         ,   CheckParity
         ]
     withModes modes tty = foldl withoutMode tty modes
@@ -49,43 +53,21 @@ initPty pty = do
 staticServerApp :: Application
 staticServerApp = staticApp $(mkSettings mkEmbedded)
 
-socketServerApp :: Pty -> PendingConnection -> IO () 
-socketServerApp pty pc = do
+socketServerApp :: PendingConnection -> IO () 
+socketServerApp pc = do
     c <- acceptRequest pc
+    forkPingThread c 30
+    pty <- initPty
     forkIO $ forever $ do
         msg <- receive c
         case msg of (DataMessage (Text m)) -> 
-                        -- talkWithPty m >>= (send c) . DataMessage . Text
-                        sendToPty m
+                        sendToPty pty m
                     _ -> return ()
-    forever $ readFromPty >>= (send c) . DataMessage . Text
+    forever $ readFromPty pty >>= (send c) . DataMessage . Text
 
   where
-    talkWithPty :: BL.ByteString -> IO BL.ByteString
-    talkWithPty input = do
-        let input' = T.decodeUtf8 $ BL.toStrict input
-        let first  = T.head input'
-        case first of 
-            'R' -> do
-                case parsePtySize $ T.tail input' of
-                    Just size -> do
-                        resizePty pty size
-                        print "RESIZE PTY"
-                        print size
-                    Nothing   -> do
-                        print $ T.breakOn "," $ T.tail input'
-                        return ()
-                return ""
-
-            'S' -> do
-                writePty pty $ BL.toStrict $ BL.tail input
-                print "WRITE PTY"
-                print input
-                output <- readPty pty
-                return $ BL.fromStrict output
-
-    sendToPty :: BL.ByteString -> IO ()
-    sendToPty input = do
+    sendToPty :: Pty -> BL.ByteString -> IO ()
+    sendToPty pty input = do
         let input' = T.decodeUtf8 $ BL.toStrict input
         let first  = T.head input'
         case first of 
@@ -102,8 +84,8 @@ socketServerApp pty pc = do
                 print "WRITE PTY"
                 print input
     
-    readFromPty :: IO BL.ByteString
-    readFromPty = do
+    readFromPty :: Pty -> IO BL.ByteString
+    readFromPty pty = do
         output <- readPty pty
         print output
         return $ BL.fromStrict output
