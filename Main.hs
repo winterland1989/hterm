@@ -6,16 +6,13 @@ import Network.Wai (Application)
 import Network.Wai.Application.Static
 import WaiAppStatic.Storage.Embedded
 import Network.Wai.Handler.Warp (run)
-import WaiAppStatic.Types (unsafeToPiece)
 import Network.Wai.Handler.WebSockets
 import Network.WebSockets
 import Control.Monad (forever)
 import System.Posix.Pty
-import System.Posix.IO (setFdOption, FdOption(..))
 import System.Directory (getHomeDirectory)
 import System.Environment (getArgs)
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString as B
 import qualified Data.Text as T
 import Data.Text.Encoding as T
 import Data.Text.Read as T
@@ -46,19 +43,19 @@ hterm :: Int -> String -> IO ()
 hterm port sh = do
     run port $ websocketsOr defaultConnectionOptions (socketServerApp sh) staticServerApp
 
-shellEnv :: IO [(String, String)]
-shellEnv = do
+shellEnv :: String -> IO [(String, String)]
+shellEnv sh = do
     homeD <- getHomeDirectory
     let homeEnv = ("HOME", homeD)
     return $ homeEnv : [
-            ("SHELL" , "bash")
+            ("SHELL" , sh)
         ,   ("TERM"  , "xterm")
         ]
 
 initPty :: String -> IO Pty
 initPty sh = do
-    se <- shellEnv
-    (pty, hd) <- spawnWithPty (Just se) True sh [] (100, 10)
+    se <- shellEnv sh
+    (pty, _) <- spawnWithPty (Just se) True sh [] (100, 10)
     attrs <- getTerminalAttributes pty
     setTerminalAttributes pty (setCCs attrs) Immediately
     return pty
