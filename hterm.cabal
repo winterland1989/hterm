@@ -35,6 +35,7 @@ executable hterm
                     ,   extra
                     ,   unix
                     ,   directory
+                    ,   process
 
   ghc-options:     -Wall -O2 -threaded -static -optl-static
   -- hs-source-dirs:      
