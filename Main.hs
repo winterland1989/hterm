@@ -45,19 +45,9 @@ hterm :: Int -> String -> IO ()
 hterm port sh = do
     run port $ websocketsOr defaultConnectionOptions (socketServerApp sh) staticServerApp
 
-shellEnv :: String -> IO [(String, String)]
-shellEnv sh = do
-    homeD <- getHomeDirectory
-    let homeEnv = ("HOME", homeD)
-    return $ homeEnv : [
-            ("SHELL" , sh)
-        ,   ("TERM"  , "xterm")
-        ]
-
 initPty :: String -> IO (Pty, ProcessHandle)
 initPty sh = do
-    se <- shellEnv sh
-    (pty, hd) <- spawnWithPty (Just se) True sh [] (100, 10)
+    (pty, hd) <- spawnWithPty Nothing True sh [] (100, 10)
     attrs <- getTerminalAttributes pty
     setTerminalAttributes pty (setCCs attrs) Immediately
     return (pty, hd)
@@ -76,17 +66,17 @@ socketServerApp sh pc = do
     c <- acceptRequest pc
     forkPingThread c 30
     (pty, hd) <- initPty sh
-    forkIO $ readFromWSConn c (pty, hd)
+    forkIO $ readFromWS c (pty, hd)
     respondToWs c (pty, hd)
 
   where
-    readFromWSConn :: Connection -> (Pty, ProcessHandle) -> IO ()
-    readFromWSConn c (pty, hd) = do
+    readFromWS :: Connection -> (Pty, ProcessHandle) -> IO ()
+    readFromWS c (pty, hd) = do
         msg <- receive c
         case msg of 
-            (DataMessage (Text m))       -> sendToPty pty m >> readFromWSConn c (pty, hd)
+            (DataMessage (Text m))       -> sendToPty pty m >> readFromWS c (pty, hd)
             (ControlMessage (Close _ _)) -> cleanUp hd
-            (ControlMessage _)           -> readFromWSConn c (pty, hd)
+            (ControlMessage _)           -> readFromWS c (pty, hd)
 
     respondToWs :: Connection -> (Pty, ProcessHandle) -> IO ()
     respondToWs c (pty, hd) = do
