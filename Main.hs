@@ -15,10 +15,11 @@ import System.Environment (getArgs)
 import System.Process (waitForProcess, ProcessHandle)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
-import Data.Text.Encoding as T
-import Data.Text.Read as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Read as T
 import Control.Concurrent (forkIO)
 import System.IO.Error (tryIOError)
+import System.Posix.Daemonize (daemonize)
 
 main :: IO ()
 main = getArgs >>= parse
@@ -26,11 +27,13 @@ main = getArgs >>= parse
 parse :: [String] -> IO ()
 parse ["-h"] = usage
 parse ["-v"] = version
-parse [] = parse ["8123", "bash"]
-parse (port:[]) = parse [port, "bash"]
-parse (port:sh:[]) = case parseTextNum $ T.pack port of
-    Just p  -> hterm p sh
+parse [port, sh] = case parseTextNum $ T.pack port of
+    Just p  -> do
+        putStrLn $ "hterm started @" ++ port ++ " with " ++ sh ++ " shell"
+        putStrLn "daemonizing..."
+        daemonize $ hterm p sh
     Nothing -> usage
+
 parse _ = usage
 
 parseTextNum :: T.Text -> Maybe Int
@@ -42,8 +45,8 @@ usage   = putStrLn "Usage: hsync-server [-vh] [port] [shell]"
 version = putStrLn "hterm 0.1"
 
 hterm :: Int -> String -> IO ()
-hterm port sh = do
-    run port $ websocketsOr defaultConnectionOptions (socketServerApp sh) staticServerApp
+hterm port sh = run port $
+    websocketsOr defaultConnectionOptions (socketServerApp sh) staticServerApp
 
 initPty :: String -> IO (Pty, ProcessHandle)
 initPty sh = do
@@ -80,7 +83,7 @@ socketServerApp sh pc = do
 
     respondToWs :: Connection -> (Pty, ProcessHandle) -> IO ()
     respondToWs c (pty, hd) = do
-        res <- tryIOError $ readFromPty pty
+        res <- tryIOError $ readPty pty >>= return . BL.fromStrict
         case res of
             Left err   -> cleanUp hd
             Right res' -> ((send c) . DataMessage . Text $ res') >> respondToWs c (pty, hd)
@@ -95,27 +98,13 @@ socketServerApp sh pc = do
         case first of 
             'R' -> do
                 case parsePtySize $ T.tail input' of
-                    Just size -> do
-                        resizePty pty size
-                        print "RESIZE PTY"
-                        print size
+                    Just size -> resizePty pty size
                     Nothing   -> return ()
 
-            'S' -> do
-                let input' = BL.toStrict $ BL.tail input
-                writePty pty input' 
-                print "WRITE TO PTY"
-                print input'
+            'S' -> writePty pty $ BL.toStrict $ BL.tail input 
 
             _  -> return ()
     
-    readFromPty :: Pty -> IO BL.ByteString
-    readFromPty pty = do
-        output <- readPty pty
-        print "READ FROM PTY"
-        print output
-        return $ BL.fromStrict output
-
     parsePtySize :: T.Text -> Maybe (Int, Int)
     parsePtySize t = case map parseTextNum (T.splitOn "," t) of
         ((Just w):(Just h):[]) -> Just (w, h)

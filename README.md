@@ -23,7 +23,7 @@ cabal build
 ```
 You will get your executable at `dist/build/hterm/hterm`
 
-For the sake of simple deploying, i embed all static file into the final executable(and i use static linking too), so you can just copy the `hterm` file to the machine you wanna deploy, since i shameless take all the client code from butterfly(main.js and main.css), i will keep the client code as latest as possible, use hterm like this:
+For the sake of simple deploying, i embed all static file into the final executable(and i use static linking too), so you can just copy the `hterm` file to the machine you wanna deploy, since i shamelessly take all the client code from butterfly(main.js and main.css), i will keep the client code as latest as possible, use hterm like this:
 ```
 $ hterm 8080 zsh
 ```

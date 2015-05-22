@@ -36,6 +36,7 @@ executable hterm
                     ,   unix
                     ,   directory
                     ,   process
+                    ,   hdaemonize
 
   ghc-options:     -Wall -O2 -threaded -static -optl-static
   -- hs-source-dirs:      
