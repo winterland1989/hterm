@@ -28,3 +28,8 @@ For the sake of simple deploying, i embed all static file into the final executa
 $ hterm 8080 zsh
 ```
 Now open your browser and access, you are done.
+
+### Key binding
++ kill: Ctrl + D
++ Copy: Ctrl + C (:))
++ Paste: Shift + Insert
