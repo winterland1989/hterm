@@ -68,6 +68,7 @@ staticServerApp = staticApp $(mkSettings mkEmbedded)
 socketServerApp :: String -> PendingConnection -> IO () 
 socketServerApp sh pc = do
     c <- acceptRequest pc
+    forkPingThread c 30
     (pty, hd) <- initPty sh
     forkIO $ readFromWS c (pty, hd)
     respondToWs c (pty, hd)
