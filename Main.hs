@@ -12,12 +12,13 @@ import Control.Monad (forever)
 import System.Posix.Pty
 import System.Directory (getHomeDirectory)
 import System.Environment (getArgs)
-import System.Process (waitForProcess, ProcessHandle)
+import System.Process (terminateProcess, waitForProcess, ProcessHandle)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Read as T
 import Control.Concurrent (forkIO)
+import Control.Exception (try)
 import System.IO.Error (tryIOError)
 import System.Posix.Daemonize (daemonize)
 
@@ -67,7 +68,6 @@ staticServerApp = staticApp $(mkSettings mkEmbedded)
 socketServerApp :: String -> PendingConnection -> IO () 
 socketServerApp sh pc = do
     c <- acceptRequest pc
-    forkPingThread c 30
     (pty, hd) <- initPty sh
     forkIO $ readFromWS c (pty, hd)
     respondToWs c (pty, hd)
@@ -75,11 +75,10 @@ socketServerApp sh pc = do
   where
     readFromWS :: Connection -> (Pty, ProcessHandle) -> IO ()
     readFromWS c (pty, hd) = do
-        msg <- receive c
+        msg <- try $ receiveDataMessage c :: IO (Either ConnectionException DataMessage)
         case msg of 
-            (DataMessage (Text m))       -> sendToPty pty m >> readFromWS c (pty, hd)
-            (ControlMessage (Close _ _)) -> cleanUp hd
-            (ControlMessage _)           -> readFromWS c (pty, hd)
+            Right (Text m) -> sendToPty pty m >> readFromWS c (pty, hd)
+            Left _         -> cleanUp hd
 
     respondToWs :: Connection -> (Pty, ProcessHandle) -> IO ()
     respondToWs c (pty, hd) = do
@@ -89,17 +88,16 @@ socketServerApp sh pc = do
             Right res' -> ((send c) . DataMessage . Text $ res') >> respondToWs c (pty, hd)
 
     cleanUp :: ProcessHandle -> IO ()
-    cleanUp hd = waitForProcess hd >> return ()
+    cleanUp hd = terminateProcess hd >> waitForProcess hd >> return ()
 
     sendToPty :: Pty -> BL.ByteString -> IO ()
     sendToPty pty input = do
         let input' = T.decodeUtf8 $ BL.toStrict input
         let first  = T.head input'
         case first of 
-            'R' -> do
-                case parsePtySize $ T.tail input' of
-                    Just size -> resizePty pty size
-                    Nothing   -> return ()
+            'R' -> case parsePtySize $ T.tail input' of
+                Just size -> resizePty pty size
+                Nothing   -> return ()
 
             'S' -> writePty pty $ BL.toStrict $ BL.tail input 
 

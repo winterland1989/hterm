@@ -47,7 +47,7 @@
     return cancel(e);
   });
 
-  addEventListener('copy', copy = function(e) {
+  document.body.addEventListener('copy', copy = function(e) {
     var data, end, j, len1, line, ref, sel;
     butterfly.bell("copied");
     e.clipboardData.clearData();

@@ -1337,7 +1337,7 @@
       if ((ev.shiftKey || ev.ctrlKey) && ev.keyCode === 45) {
         return true;
       }
-      if ((ev.shiftKey && ev.ctrlKey) && ((ref = ev.keyCode) === 67 || ref === 86)) {
+      if (ev.ctrlKey && ev.key === 'c') {
         return true;
       }
       if (ev.altKey && ev.keyCode === 90 && !this.skipNextKey) {
@@ -1493,22 +1493,6 @@
         default:
           if (ev.ctrlKey) {
             if (ev.keyCode >= 65 && ev.keyCode <= 90) {
-              if (ev.keyCode === 67) {
-                t = (new Date()).getTime();
-                if ((t - this.lastcc) < 500 && !this.stop) {
-                  id = setTimeout(function() {});
-                  while (id--) {
-                    if (id !== this.t_bell && id !== this.t_queue && id !== this.t_blink) {
-                      clearTimeout(id);
-                    }
-                  }
-                  this.body.classList.add('stopped');
-                  this.stop = true;
-                } else if (this.stop) {
-                  return true;
-                }
-                this.lastcc = t;
-              }
               key = String.fromCharCode(ev.keyCode - 64);
             } else if (ev.keyCode === 32) {
               key = String.fromCharCode(0);
@@ -1577,6 +1561,9 @@
         return true;
       }
       if ((ev.shiftKey && ev.ctrlKey) && ((ref = ev.keyCode) === 67 || ref === 86)) {
+        return true;
+      }
+      if (ev.ctrlKey && ev.key === 'c') {
         return true;
       }
       cancel(ev);
