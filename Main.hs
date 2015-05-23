@@ -42,7 +42,7 @@ parseTextNum x = case T.decimal x of
     Right (x', _) -> Just x'
     _             -> Nothing
 
-usage   = putStrLn "Usage: hsync-server [-vh] [port] [shell]"
+usage   = putStrLn "Usage: hsync-server [-vh] port shell"
 version = putStrLn "hterm 0.1"
 
 hterm :: Int -> String -> IO ()

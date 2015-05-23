@@ -30,6 +30,6 @@ $ hterm 8080 zsh
 Now open your browser and access, you are done.
 
 ### Key binding
-+ kill: Ctrl + D
-+ Copy: Ctrl + C (:))
-+ Paste: Shift + Insert
++ KILL:  ctrl + d
++ Copy:  ctrl + c (:))
++ Paste: shift + insert

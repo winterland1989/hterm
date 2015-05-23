@@ -1337,7 +1337,8 @@
       if ((ev.shiftKey || ev.ctrlKey) && ev.keyCode === 45) {
         return true;
       }
-      if (ev.ctrlKey && ev.key === 'c') {
+      //ctrl+c copy
+      if (ev.ctrlKey && (ev.charCode == 67 || ev.key === 'c')) {
         return true;
       }
       if (ev.altKey && ev.keyCode === 90 && !this.skipNextKey) {
@@ -1563,7 +1564,8 @@
       if ((ev.shiftKey && ev.ctrlKey) && ((ref = ev.keyCode) === 67 || ref === 86)) {
         return true;
       }
-      if (ev.ctrlKey && ev.key === 'c') {
+      //ctrl+c copy
+      if (ev.ctrlKey && (ev.charCode == 67 || ev.key === 'c')) {
         return true;
       }
       cancel(ev);
