@@ -52,9 +52,6 @@ body {
 body {
   transition: 200ms;
   transform-origin: bottom; }
-  body.bell {
-    -webkit-filter: blur(2px);
-    filter: blur(2px); }
   body.skip {
     -webkit-filter: sepia(1);
     filter: sepia(1); }
