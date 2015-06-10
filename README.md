@@ -36,4 +36,4 @@ Now open your browser and access, you are done.
 
 ### Gotcha
 After you close your browser/tab, SIGTERM will be sent to your shell process, but there's no guarantee that the shell will be terminated, for example, when you running vim from the shell, a disconnect from hterm may result in two useless running process, so always clean up your shell before leaving, it's also recommended to use ```exit``` to leave your session.
-if you need clean up useless shell sessions somehow, just kill hterm and restart.
+if you need clean up useless shell sessions somehow, find shell processes which ppid equals to hterm's pid and ```kill -9```.

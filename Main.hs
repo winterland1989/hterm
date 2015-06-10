@@ -14,12 +14,13 @@ import System.Directory (getHomeDirectory)
 import System.Environment (getArgs)
 import System.Process (terminateProcess, waitForProcess, ProcessHandle)
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Read as T
-import Control.Concurrent (forkIO)
+import Control.Concurrent
 import Control.Exception (try)
-import System.IO.Error (tryIOError)
+import System.IO.Error
 import System.Posix.Daemonize (daemonize)
 
 main :: IO ()
@@ -70,23 +71,27 @@ socketServerApp sh pc = do
     c <- acceptRequest pc
     forkPingThread c 30
     (pty, hd) <- initPty sh
-    forkIO $ readFromWS c (pty, hd)
-    respondToWs c (pty, hd)
+    pid <- forkIO $ respondToWs c (pty, hd)
+    readFromWS c (pty, hd) pid
 
   where
-    readFromWS :: Connection -> (Pty, ProcessHandle) -> IO ()
-    readFromWS c (pty, hd) = do
+    readFromWS :: Connection -> (Pty, ProcessHandle) -> ThreadId -> IO ()
+    readFromWS c (pty, hd) pid = do
         msg <- try $ receiveDataMessage c :: IO (Either ConnectionException DataMessage)
         case msg of 
-            Right (Text m) -> sendToPty pty m >> readFromWS c (pty, hd)
-            Left _         -> cleanUp hd
+            Right (Text m) -> sendToPty pty m >> readFromWS c (pty, hd) pid
+            Left _         -> writePty pty $ BS.singleton '\ETB'
 
     respondToWs :: Connection -> (Pty, ProcessHandle) -> IO ()
     respondToWs c (pty, hd) = do
-        res <- tryIOError $ readPty pty >>= return . BL.fromStrict
+        res <- tryIOError $ readPty pty
         case res of
-            Left err   -> cleanUp hd
-            Right res' -> ((send c) . DataMessage . Text $ res') >> respondToWs c (pty, hd)
+            Left _ -> cleanUp hd
+            Right res' -> sendByteString c res' >> respondToWs c (pty, hd)
+      where
+        sendByteString c bs = do
+            catchIOError ((send c) . DataMessage . Text $ BL.fromStrict bs) $
+                \ e -> cleanUp hd
 
     cleanUp :: ProcessHandle -> IO ()
     cleanUp hd = terminateProcess hd >> waitForProcess hd >> return ()
