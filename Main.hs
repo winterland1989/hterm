@@ -8,6 +8,7 @@ import WaiAppStatic.Storage.Embedded
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Handler.WebSockets
 import Network.WebSockets
+import WaiAppStatic.Types
 import Control.Monad (forever)
 import System.Posix.Pty
 import System.Directory (getHomeDirectory)
@@ -64,7 +65,18 @@ initPty sh = do
     withCCs ccs tty = foldl withCC tty ccs
 
 staticServerApp :: Application
-staticServerApp = staticApp $(mkSettings mkEmbedded)
+staticServerApp = staticApp settingsWithIndex
+
+settings = $(mkSettings mkEmbedded)
+
+settingsWithIndex = settings {
+    ssLookupFile = indexLookUp $ ssLookupFile settings
+}
+
+indexLookUp :: (Pieces -> IO LookupResult) -> Pieces -> IO LookupResult
+indexLookUp lookup p =
+    case p of [] -> lookup [unsafeToPiece "index.html"]
+              p' -> lookup p'
 
 socketServerApp :: String -> PendingConnection -> IO () 
 socketServerApp sh pc = do
