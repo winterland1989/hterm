@@ -735,7 +735,8 @@
 
     Terminal.prototype.nativeScrollTo = function(scroll) {
       if (scroll == null) {
-        scroll = 2000000000;
+        // Fix safari scroll
+        scroll = 20000000;
       }
       return window.scrollTo(0, scroll);
     };

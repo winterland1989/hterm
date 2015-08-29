@@ -86,10 +86,6 @@ body {
   body.locked::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 0, 0, 0.8); }
 
-/* Comment this one to remove the blurry text: */
-body {
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.5); }
-
 /* @import all_fx */
 /* *-* coding: utf-8 *-* */
 /* This file is part of butterfly */
