@@ -1,59 +1,70 @@
-{-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module Main where
 
-import Static (mkEmbedded)
-import Network.Wai (Application)
-import Network.Wai.Application.Static
-import WaiAppStatic.Storage.Embedded
-import Network.Wai.Handler.Warp (run)
-import Network.Wai.Handler.WebSockets
-import Network.WebSockets
-import WaiAppStatic.Types
-import Control.Monad (forever)
-import System.Posix.Pty
-import System.Directory (getHomeDirectory)
-import System.Environment (getArgs)
-import System.Process (terminateProcess, waitForProcess, ProcessHandle)
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Char8 as BS
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import qualified Data.Text.Read as T
-import Control.Concurrent
-import Control.Exception (try)
-import System.IO.Error
-import System.Posix.Daemonize (daemonize)
+import           Control.Concurrent
+import           Control.Exception              (try)
+import qualified Data.ByteString.Char8          as BS
+import qualified Data.ByteString.Lazy           as BL
+import qualified Data.Text                      as T
+import qualified Data.Text.Encoding             as T
+import qualified Data.Text.Read                 as T
+import           Network.Wai                    (Application)
+import           Network.Wai.Application.Static
+import           Network.Wai.Handler.Warp       (run)
+import           Network.Wai.Handler.WebSockets
+import           Network.WebSockets
+import           Static                         (mkEmbedded)
+import           System.Environment             (getArgs)
+import           System.IO.Error
+import           System.Posix.Daemonize         (daemonize)
+import           System.Posix.Pty
+import           System.Process                 (ProcessHandle,
+                                                 terminateProcess,
+                                                 waitForProcess)
+import           WaiAppStatic.Storage.Embedded
+import           WaiAppStatic.Types
 
 main :: IO ()
 main = getArgs >>= parse
+  where
+    parse :: [String] -> IO ()
+    parse ["-h"] = usage
+    parse ["-v"] = version
+    parse [port] = case parseTextNum $ T.pack port of
+        Just p  -> do
+            putStrLn $ "hterm started @" ++ port
+            putStrLn "daemonizing..."
+            daemonize $ hterm p
+        Nothing -> usage
 
-parse :: [String] -> IO ()
-parse ["-h"] = usage
-parse ["-v"] = version
-parse [port, sh] = case parseTextNum $ T.pack port of
-    Just p  -> do
-        putStrLn $ "hterm started @" ++ port ++ " with " ++ sh ++ " shell"
-        putStrLn "daemonizing..."
-        daemonize $ hterm p sh
-    Nothing -> usage
+    parse _ = usage
 
-parse _ = usage
 
-parseTextNum :: T.Text -> Maybe Int
-parseTextNum x = case T.decimal x of
-    Right (x', _) -> Just x'
-    _             -> Nothing
+    usage   = putStrLn "Usage: hsync-server [-vh] port"
+    version = putStrLn "hterm 0.1"
 
-usage   = putStrLn "Usage: hsync-server [-vh] port shell"
-version = putStrLn "hterm 0.1"
+hterm :: Int -> IO ()
+hterm port = run port $ websocketsOr defaultConnectionOptions socketServerApp staticServerApp
 
-hterm :: Int -> String -> IO ()
-hterm port sh = run port $
-    websocketsOr defaultConnectionOptions (socketServerApp sh) staticServerApp
+staticServerApp :: Application
+staticServerApp = staticApp settingsWithIndex
 
-initPty :: String -> IO (Pty, ProcessHandle)
-initPty sh = do
-    (pty, hd) <- spawnWithPty Nothing True sh [] (100, 10)
+settingsWithIndex :: StaticSettings
+settingsWithIndex = settings {
+    ssLookupFile = indexLookUp $ ssLookupFile settings
+}
+  where
+    settings = $(mkSettings mkEmbedded)
+
+indexLookUp :: (Pieces -> IO LookupResult) -> Pieces -> IO LookupResult
+indexLookUp lookup p =
+    case p of [] -> lookup [unsafeToPiece "index.html"]
+              p' -> lookup p'
+
+initPty :: IO (Pty, ProcessHandle)
+initPty = do
+    (pty, hd) <- spawnWithPty Nothing True "login" [] (100, 10)
     attrs <- getTerminalAttributes pty
     setTerminalAttributes pty (setCCs attrs) Immediately
     return (pty, hd)
@@ -64,25 +75,11 @@ initPty sh = do
         ]
     withCCs ccs tty = foldl withCC tty ccs
 
-staticServerApp :: Application
-staticServerApp = staticApp settingsWithIndex
-
-settings = $(mkSettings mkEmbedded)
-
-settingsWithIndex = settings {
-    ssLookupFile = indexLookUp $ ssLookupFile settings
-}
-
-indexLookUp :: (Pieces -> IO LookupResult) -> Pieces -> IO LookupResult
-indexLookUp lookup p =
-    case p of [] -> lookup [unsafeToPiece "index.html"]
-              p' -> lookup p'
-
-socketServerApp :: String -> PendingConnection -> IO () 
-socketServerApp sh pc = do
+socketServerApp :: PendingConnection -> IO ()
+socketServerApp pc = do
     c <- acceptRequest pc
     forkPingThread c 30
-    (pty, hd) <- initPty sh
+    (pty, hd) <- initPty
     pid <- forkIO $ respondToWs c (pty, hd)
     readFromWS c (pty, hd) pid
 
@@ -90,9 +87,9 @@ socketServerApp sh pc = do
     readFromWS :: Connection -> (Pty, ProcessHandle) -> ThreadId -> IO ()
     readFromWS c (pty, hd) pid = do
         msg <- try $ receiveDataMessage c :: IO (Either ConnectionException DataMessage)
-        case msg of 
+        case msg of
             Right (Text m) -> sendToPty pty m >> readFromWS c (pty, hd) pid
-            Left _         -> writePty pty $ BS.singleton '\ETB'
+            _              -> writePty pty $ BS.singleton '\ETB'
 
     respondToWs :: Connection -> (Pty, ProcessHandle) -> IO ()
     respondToWs c (pty, hd) = do
@@ -101,9 +98,9 @@ socketServerApp sh pc = do
             Left _ -> cleanUp hd
             Right res' -> sendByteString c res' >> respondToWs c (pty, hd)
       where
-        sendByteString c bs = do
-            catchIOError ((send c) . DataMessage . Text $ BL.fromStrict bs) $
-                \ e -> cleanUp hd
+        sendByteString c bs =
+            catchIOError (send c . DataMessage . Text $ BL.fromStrict bs) $
+                \_ -> cleanUp hd
 
     cleanUp :: ProcessHandle -> IO ()
     cleanUp hd = terminateProcess hd >> waitForProcess hd >> return ()
@@ -112,16 +109,21 @@ socketServerApp sh pc = do
     sendToPty pty input = do
         let input' = T.decodeUtf8 $ BL.toStrict input
         let first  = T.head input'
-        case first of 
+        case first of
             'R' -> case parsePtySize $ T.tail input' of
                 Just size -> resizePty pty size
                 Nothing   -> return ()
 
-            'S' -> writePty pty $ BL.toStrict $ BL.tail input 
+            'S' -> writePty pty $ BL.toStrict $ BL.tail input
 
             _  -> return ()
-    
+
     parsePtySize :: T.Text -> Maybe (Int, Int)
     parsePtySize t = case map parseTextNum (T.splitOn "," t) of
-        ((Just w):(Just h):[]) -> Just (w, h)
+        [Just w, Just h] -> Just (w, h)
         _                      -> Nothing
+
+parseTextNum :: T.Text -> Maybe Int
+parseTextNum x = case T.decimal x of
+    Right (x', _) -> Just x'
+    _             -> Nothing

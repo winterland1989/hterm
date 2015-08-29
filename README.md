@@ -2,9 +2,6 @@
 Http terminal based on [butterfly](https://github.com/paradoxxxzero/butterfly) with server written in haskell.
 All credit of js and css go to [paradoxxxzero](https://github.com/paradoxxxzero/butterfly)
 
-### The stroy
-My company's machine is running a very old linux distro(CentOs 4.3) which i can't setup a proper butterfly on, but i managed to compile a working GHC(from 6.8 -> 6.10 -> 6.12 -> 7.4 -> 7.8 -> 7.10, Oh My!), So why not just write a backend server with it since i'm making my way to a haskell noobie?
-
 ### Build and use
 First get your GHC and cabal
 ```
@@ -23,7 +20,7 @@ You will get your executable at `dist/build/hterm/hterm`
 
 For the sake of simple deploying, i embed all static file into final binary, i will keep the client code as latest as possible, use hterm like this:
 ```
-$ hterm 8080 zsh
+$ hterm 8080
 ```
 Now open your browser and access, you are done.
 
