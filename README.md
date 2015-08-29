@@ -22,6 +22,10 @@ For the sake of simple deploying, i embed all static file into final binary, i w
 ```
 $ hterm 8080
 ```
+or set port using environment varible $PORT(for keter users):
+```
+$ PORT=8080 hterm
+```
 Now open your browser and access, you are done.
 
 ### Key binding
