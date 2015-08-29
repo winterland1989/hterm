@@ -32,7 +32,6 @@ executable hterm
                     ,   websockets
                     ,   wai-websockets
                     ,   posix-pty
-                    ,   extra
                     ,   unix
                     ,   process
                     ,   hdaemonize
