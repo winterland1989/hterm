@@ -44,7 +44,7 @@ main = getArgs >>= parse
 
     usage   = putStrLn "Usage: hterm [-vh] [port] (default port=8080, or use environment varible PORT like this:)"
            >> putStrLn "       PORT=80 hterm"
-    version = putStrLn "hterm 0.2"
+    version = putStrLn "hterm 0.3"
 
 hterm :: Int -> IO ()
 hterm port = run port $ websocketsOr defaultConnectionOptions socketServerApp staticServerApp
@@ -66,7 +66,7 @@ indexLookUp lookup p =
 
 initPty :: IO (Pty, ProcessHandle)
 initPty = do
-    (pty, hd) <- spawnWithPty Nothing True "login" [] (100, 10)
+    (pty, hd) <- spawnWithPty (Just [("TERM", "xterm")]) True "login" [] (100, 10)
     attrs <- getTerminalAttributes pty
     setTerminalAttributes pty (setCCs attrs) Immediately
     return (pty, hd)
