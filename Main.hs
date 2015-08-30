@@ -15,7 +15,7 @@ import           Network.Wai.Handler.Warp       (run)
 import           Network.Wai.Handler.WebSockets
 import           Network.WebSockets
 import           Static                         (mkEmbedded)
-import           System.Environment             (getArgs, getEnv)
+import           System.Environment             (getArgs)
 import           System.IO.Error
 import           System.Posix.Daemonize         (daemonize)
 import           System.Posix.Pty
@@ -37,14 +37,10 @@ main = getArgs >>= parse
             putStrLn "daemonizing..."
             daemonize $ hterm p
         Nothing -> usage
-    parse [] = do
-        port <- catchIOError (getEnv "PORT") $ \e -> return "8080"
-        parse [port]
     parse _ = usage
 
-    usage   = putStrLn "Usage: hterm [-vh] [port] (default port=8080, or use environment varible PORT like this:)"
-           >> putStrLn "       PORT=80 hterm"
-    version = putStrLn "hterm 0.3.1"
+    usage   = putStrLn "Usage: hterm [-vh] port"
+    version = putStrLn "hterm 0.3.2"
 
 hterm :: Int -> IO ()
 hterm port = run port $ websocketsOr defaultConnectionOptions socketServerApp staticServerApp
