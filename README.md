@@ -4,19 +4,21 @@ hterm
 Http terminal based on [butterfly](https://github.com/paradoxxxzero/butterfly) with server written in haskell.
 All credit of js and css go to [paradoxxxzero](https://github.com/paradoxxxzero/butterfly), based on that i add some fix and a useful save function.
 
-### Usage
+Usage
+-----
 
 ```
 $ hterm 8080
 ```
 Now open your browser and access port 8080, you are done.
 
-### Binary
+Binary
+------
 
 Mac(build on yosemite) and Linux(build on Ubuntu x86_64 14.04) are under [binary](https://github.com/winterland1989/hterm/tree/master/binary), all staic files(js,css...) are embeded into the binary.
 
-
-### Build from source
+Build from source
+-----------------
 
 First get your GHC and cabal, then
 
@@ -38,14 +40,16 @@ $ sudo cp crtbeginS.o crtbeginT.o
 
 You will get your executable at `dist/build/hterm/hterm`
 
-### Key binding
+Key binding
+-----------
 
 + KILL:  ctrl + d
 + Copy:  ctrl + c (command + c on Mac)
 + Paste: shift + insert (command + v on Mac)
 + Save: ctrl + s (see below)
 
-### Save stdout to local
+Save stdout to local
+--------------------
 
 Hterm use [FileSaver.js](https://github.com/eligrey/FileSaver.js) to save last `stdout` to local file, let's try it:
 
