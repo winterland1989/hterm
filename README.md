@@ -50,7 +50,9 @@ cat theFileYouWantToSave; sleep 10
 
 Now you have 10 seconds to press `ctrl + s` and save it to local. (after that, your file will be appended with a extra shell propmt line).
 
-You can always access your stdout with `window.stdout` in your browser's console.
+You can always access your stdout with `window.stdout` in your browser's console. 
+
+Due to a [safari bug](https://github.com/eligrey/FileSaver.js/issues/12#issuecomment-47247096), mime will always be `text/plain`, so remove the `.txt` extension if necessary.
 
 This function is intended to save text stream(sql dump, source code...), but you can use `base64` to encode binary stream(i do it a lot):
 
