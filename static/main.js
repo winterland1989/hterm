@@ -84,6 +84,14 @@
     });
     term.ws = ws;
     window.butterfly = term;
+    window.stdout = "";
+    window.save = function(){
+      if (window.stdout[0] = '\n'){
+        window.stdout = window.stdout.substr(1);
+      }
+      var blob = new Blob([window.stdout], {type: "text/plain;charset=utf-8"});
+      saveAs(blob, "stdout");
+    }
     window.bench = function(n) {
       var rnd;
       if (n == null) {
@@ -777,10 +785,12 @@
               case "\x0b":
               case "\x0c":
                 this.screen[this.y + this.shift].dirty = true;
+                window.stdout += ch;
                 this.nextLine();
                 break;
               case "\r":
                 this.x = 0;
+                window.stdout += ch;
                 break;
               case "\b":
                 if (this.x >= this.cols) {
@@ -789,9 +799,11 @@
                 if (this.x > 0) {
                   this.x--;
                 }
+                window.stdout = window.stdout.slice(0,-1);
                 break;
               case "\t":
                 this.x = this.nextStop();
+                window.stdout += ch;
                 break;
               case "\x0e":
                 this.setgLevel(1);
@@ -803,6 +815,7 @@
                 this.state = State.escaped;
                 break;
               default:
+                window.stdout += ch;
                 if (("\u0300" <= ch && ch <= "\u036F") || ("\u1AB0" <= ch && ch <= "\u1AFF") || ("\u1DC0" <= ch && ch <= "\u1DFF") || ("\u20D0" <= ch && ch <= "\u20FF") || ("\uFE20" <= ch && ch <= "\uFE2F")) {
                   x = this.x;
                   y = this.y + this.shift;
@@ -1338,9 +1351,14 @@
       if ((ev.shiftKey || ev.ctrlKey) && ev.keyCode === 45) {
         return true;
       }
-      //ctrl+c copy
-      if (ev.ctrlKey && (ev.charCode == 67 || ev.key === 'c')) {
+      // ctrl+c copy
+      if (ev.ctrlKey && (ev.keyCode === 67 || ev.key === 'c')) {
         return true;
+      }
+      // ctrl+s save
+      if (ev.ctrlKey && (ev.keyCode === 83 || ev.key === 's')) {
+        window.save()
+        return false;
       }
       if (ev.altKey && ev.keyCode === 90 && !this.skipNextKey) {
         this.skipNextKey = true;
@@ -1535,6 +1553,7 @@
       }
       this.showCursor();
       this.send(key);
+      window.stdout = "";
       return cancel(ev);
     };
 

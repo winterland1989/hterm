@@ -62,7 +62,7 @@ indexLookUp lookup p =
 
 initPty :: IO (Pty, ProcessHandle)
 initPty = do
-    (pty, hd) <- spawnWithPty (Just [("TERM", "xterm")]) True "login" [] (100, 10)
+    (pty, hd) <- spawnWithPty (Just env) True "login" [] (100, 10)
     attrs <- getTerminalAttributes pty
     setTerminalAttributes pty (setCCs attrs) Immediately
     return (pty, hd)
@@ -72,6 +72,7 @@ initPty = do
         ,   (Kill , '\NAK')
         ]
     withCCs ccs tty = foldl withCC tty ccs
+    env = [("TERM", "xterm"), ("LC_ALL", "C")]
 
 socketServerApp :: PendingConnection -> IO ()
 socketServerApp pc = do
