@@ -11,10 +11,6 @@ $ hterm 8080
 ```
 Now open your browser and access port 8080, you are done.
 
-### Binary
-
-Mac(build on yosemite) and Linux(build on Ubuntu x86_64 14.04) are under [binary](), all staic files(js,css...) are embeded into the binary.
-
 ### Build from source
 
 First get your GHC and cabal, then
@@ -44,7 +40,7 @@ You will get your executable at `dist/build/hterm/hterm`
 + Paste: shift + insert (command + v on Mac)
 + Save: ctrl + s (see below)
 
-### Use save()
+### Save stdout to local
 
 Hterm use [FileSaver.js](https://github.com/eligrey/FileSaver.js) to save last `stdout` to local file, let's try it:
 
