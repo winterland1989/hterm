@@ -90,7 +90,7 @@
       if (start === -1){
           start = 0;
       }
-      var blob = new Blob([window.stdout.substr(start+2)], {type: ""});
+      var blob = new Blob([window.stdout.substr(start+2)], {type: "text/plain"});
       saveAs(blob, "stdout");
     }
     window.bench = function(n) {

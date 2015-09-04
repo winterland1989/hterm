@@ -66,13 +66,6 @@ base64 -D theFileYouJustSaved > decodedFile
 
 Watch out if the stream is too long, it may crash your browser(too many nodes...).
 
-Key binding(Linux)
-------------------
-
-+ KILL:  ctrl + d
-+ Copy:  ctrl + c (:))
-+ Paste: shift + insert
-
 Gotcha
 ------
 
