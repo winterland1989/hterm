@@ -40,7 +40,7 @@ main = getArgs >>= parse
     parse _ = usage
 
     usage   = putStrLn "Usage: hterm [-vh] port"
-    version = putStrLn "hterm 0.3.2"
+    version = putStrLn "hterm 0.4.0"
 
 hterm :: Int -> IO ()
 hterm port = run port $ websocketsOr defaultConnectionOptions socketServerApp staticServerApp

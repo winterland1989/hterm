@@ -11,6 +11,11 @@ $ hterm 8080
 ```
 Now open your browser and access port 8080, you are done.
 
+### Binary
+
+Mac(build on yosemite) and Linux(build on Ubuntu x86_64 14.04) are under [binary](https://github.com/winterland1989/hterm/tree/master/binary), all staic files(js,css...) are embeded into the binary.
+
+
 ### Build from source
 
 First get your GHC and cabal, then
