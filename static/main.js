@@ -86,10 +86,11 @@
     window.butterfly = term;
     window.stdout = "";
     window.save = function(){
-      if (window.stdout[0] = '\n'){
-        window.stdout = window.stdout.substr(1);
+      var start =  window.stdout.indexOf('\r\n');
+      if (start === -1){
+          start = 0;
       }
-      var blob = new Blob([window.stdout], {type: "text/plain;charset=utf-8"});
+      var blob = new Blob([window.stdout.substr(start+2)], {type: ""});
       saveAs(blob, "stdout");
     }
     window.bench = function(n) {
