@@ -16,13 +16,13 @@ Now open your browser, access port 8080, and you are done.
 Binaries
 --------
 
-Binaries for Mac (built on Yosemite) and Linux (built on Ubuntu x86_64 14.04) are under [binary](https://github.com/winterland1989/hterm/tree/master/binary). All staic files (js, css, etc.) are embeded into the binary.
+Binaries for Mac (built on Yosemite) and Linux (built on Ubuntu x86_64 14.04) are under [binary](https://github.com/winterland1989/hterm/tree/master/binary). All static files (js, css, etc.) are embeded into the binary.
 
 
 Build from source
 -----------------
 
-First get GHC and cabal, then
+First [get GHC and cabal](https://www.haskell.org/downloads), then
 
 ```
 git clone https://github.com/winterland1989/hterm.git
@@ -47,21 +47,21 @@ You will get your executable at `dist/build/hterm/hterm`.
 Key bindings
 ------------
 
-+ KILL:  ctrl + d
-+ Copy:  ctrl + c (command + c on Mac)
-+ Paste: shift + insert (command + v on Mac)
-+ Save:  ctrl + s (see below)
++ KILL:  Ctrl+D
++ Copy:  Ctrl+C (Command+C on Mac)
++ Paste: Shift+Insert (Command+V on Mac)
++ Save:  Ctrl+S (see below)
 
 Saving `stdout` to client-side file
 -----------------------------------
 
-hterm uses [FileSaver.js](https://github.com/eligrey/FileSaver.js) to save `stdout` to a local file on the client side. Let's try it:
+`hterm` uses [FileSaver.js](https://github.com/eligrey/FileSaver.js) to save `stdout` to a local file on the client side. Let's try it:
 
 ```
 cat theFileYouWantToSave; sleep 10
 ```
 
-Now you have 10 seconds to press `ctrl + s` and save it to a local file. After that, your file will be appended with an extra shell prompt line.
+Now you have 10 seconds to press `Ctrl+S` and save it to a local file. After that, your file will be appended with an extra shell prompt line.
 
 You can always access your `stdout` with `window.stdout` in your browser's console. 
 
@@ -88,6 +88,6 @@ Gotchas
 
 + If you need to clean up useless shell sessions somehow, use `killall -9 $SHELL` and re-login.
 
-+ On Mac OS, Safari doesn't allow paste if there's no `input` in focus (and `keyCode` in Safari is a mess) so copy and paste doesn't work in Safari. Use Chrome or Firefox to use `command+c` to copy and `command+v` paste.
++ On Mac OS, Safari doesn't allow paste if there's no `input` in focus (and `keyCode` in Safari is a mess) so copy and paste doesn't work in Safari. Use Chrome or Firefox to use `Command+C` to copy and `Command+V` paste.
 
 + Under some Linux distros (Ubuntu, for example), `login` needs to run as root, so run `hterm` like this: `sudo hterm 3000`.
