@@ -56,9 +56,9 @@ settingsWithIndex = settings {
     settings = $(mkSettings mkEmbedded)
 
 indexLookUp :: (Pieces -> IO LookupResult) -> Pieces -> IO LookupResult
-indexLookUp lookup p =
-    case p of [] -> lookup [unsafeToPiece "index.html"]
-              p' -> lookup p'
+indexLookUp lkup p =
+    case p of [] -> lkup [unsafeToPiece "index.html"]
+              p' -> lkup p'
 
 initPty :: IO (Pty, ProcessHandle)
 initPty = do
@@ -97,8 +97,8 @@ socketServerApp pc = do
             Left _ -> cleanUp hd
             Right res' -> sendByteString c res' >> respondToWs c (pty, hd)
       where
-        sendByteString c bs =
-            catchIOError (send c . DataMessage . Text $ BL.fromStrict bs) $
+        sendByteString k bs =
+            catchIOError (send k . DataMessage . Text $ BL.fromStrict bs) $
                 \_ -> cleanUp hd
 
     cleanUp :: ProcessHandle -> IO ()
