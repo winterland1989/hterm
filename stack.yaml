@@ -1,0 +1,6 @@
+resolver: lts-3.5
+flags: {}
+packages:
+- '.'
+extra-deps:
+- posix-pty-0.2.0.1

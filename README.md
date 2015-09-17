@@ -32,6 +32,14 @@ cabal install --only-dependencies
 cabal build
 ```
 
+An easier alternative might be to get [stack](https://github.com/commercialhaskell/stack#how-to-install)
+and then
+```
+git clone https://github.com/winterland1989/hterm.git
+cd hterm
+stack install
+```
+
 ### Static linking
 
 By default the project is built with dynamic linking, but you can use static linking by adding `-staic -optl-static` to `-ghc-options` in the cabal file. However, due to a glib [bug](http://stackoverflow.com/questions/6634387/c-statically-linked-shared-library), you may have to use a workaround like this to get it working:

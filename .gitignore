@@ -12,3 +12,5 @@ cabal-dev/
 cabal.config
 dist-sandbox
 dist
+.stack-work/
+*.un~
