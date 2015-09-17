@@ -1,8 +1,8 @@
 hterm
 =====
 
-Http terminal based on [butterfly](https://github.com/paradoxxxzero/butterfly) with server written in haskell.
-All credit of js and css go to [paradoxxxzero](https://github.com/paradoxxxzero/butterfly), based on that i add some fix and a useful save function.
+An HTTP terminal based on [butterfly](https://github.com/paradoxxxzero/butterfly) with a server written in Haskell.
+All credit for JS and CSS goes to [paradoxxxzero](https://github.com/paradoxxxzero/butterfly). I added some fixes and a useful save function.
 
 Usage
 -----
@@ -10,17 +10,19 @@ Usage
 ```
 $ hterm 8080
 ```
-Now open your browser and access port 8080, you are done.
 
-Binary
-------
+Now open your browser, access port 8080, and you are done.
 
-Mac(build on yosemite) and Linux(build on Ubuntu x86_64 14.04) are under [binary](https://github.com/winterland1989/hterm/tree/master/binary), all staic files(js,css...) are embeded into the binary.
+Binaries
+--------
+
+Binaries for Mac (built on Yosemite) and Linux (built on Ubuntu x86_64 14.04) are under [binary](https://github.com/winterland1989/hterm/tree/master/binary). All staic files (js, css, etc.) are embeded into the binary.
+
 
 Build from source
 -----------------
 
-First get your GHC and cabal, then
+First get GHC and cabal, then
 
 ```
 git clone https://github.com/winterland1989/hterm.git
@@ -30,60 +32,62 @@ cabal install --only-dependencies
 cabal build
 ```
 
-If you use static linking(not used by default, add `-staic -optl-static` to cabal file), due to a glib [bug](http://stackoverflow.com/questions/6634387/c-statically-linked-shared-library), you may have to use a workaround like this:
-```
+### Static linking
 
+By default the project is built with dynamic linking, but you can use static linking by adding `-staic -optl-static` to `-ghc-options` in the cabal file. However, due to a glib [bug](http://stackoverflow.com/questions/6634387/c-statically-linked-shared-library), you may have to use a workaround like this to get it working:
+
+```
 $ cd /usr/lib/gcc/x86_64-linux-gnu/4.4
 $ sudo cp crtbeginT.o crtbeginT.orig.o
 $ sudo cp crtbeginS.o crtbeginT.o
 ```
 
-You will get your executable at `dist/build/hterm/hterm`
+You will get your executable at `dist/build/hterm/hterm`.
 
-Key binding
------------
+Key bindings
+------------
 
 + KILL:  ctrl + d
 + Copy:  ctrl + c (command + c on Mac)
 + Paste: shift + insert (command + v on Mac)
-+ Save: ctrl + s (see below)
++ Save:  ctrl + s (see below)
 
-Save stdout to local
---------------------
+Saving `stdout` to client-side file
+-----------------------------------
 
-Hterm use [FileSaver.js](https://github.com/eligrey/FileSaver.js) to save last `stdout` to local file, let's try it:
+hterm uses [FileSaver.js](https://github.com/eligrey/FileSaver.js) to save `stdout` to a local file on the client side. Let's try it:
 
 ```
 cat theFileYouWantToSave; sleep 10
 ```
 
-Now you have 10 seconds to press `ctrl + s` and save it to local. (after that, your file will be appended with a extra shell propmt line).
+Now you have 10 seconds to press `ctrl + s` and save it to a local file. After that, your file will be appended with an extra shell prompt line.
 
-You can always access your stdout with `window.stdout` in your browser's console. 
+You can always access your `stdout` with `window.stdout` in your browser's console. 
 
-Due to a [safari bug](https://github.com/eligrey/FileSaver.js/issues/12#issuecomment-47247096), mime will always be `text/plain`, so remove the `.txt` extension if necessary.
+Due to a [Safari bug](https://github.com/eligrey/FileSaver.js/issues/12#issuecomment-47247096), the MIME type will always be `text/plain`, so remove the `.txt` extension if necessary.
 
-This function is intended to save text stream(sql dump, source code...), but you can use `base64` to encode binary stream(i do it a lot):
+This function is intended to save a text stream (SQL dump, source code, etc.), but you can use `base64` to encode a binary stream (I've done it a lot):
 
 ```
 base64 someSmallBinaryFileYesMakeSureReallySmall; sleep 10
 ```
 
-After saving it to local, decode it with `base64`(at your local shell):
+After saving it to local file, decode it with `base64` at your local shell:
 
 ```
 base64 -D theFileYouJustSaved > decodedFile
 ```
 
-Watch out if the stream is too long, it may crash your browser(too many nodes...).
+Watch out: if the stream is too long it may crash your browser (too many nodes).
 
-Gotcha
-------
+Gotchas
+-------
 
-+ After you close your browser/tab, SIGTERM will be sent to your shell process, but there's no guarantee that the shell will be terminated, for example, when you running vim from the shell, a disconnect from hterm may result in two useless running process, so always clean up your shell before leaving.
++ After you close your browser/tab, SIGTERM will be sent to your shell process, but there's no guarantee that the shell will be terminated. For example, when running `vim` from the shell, a disconnect from `hterm` may result in two useless running processes. **Always clean up your shell before leaving.**
 
-+ if you need clean up useless shell sessions somehow, use `killall -9 $SHELL` and re-login.
++ If you need to clean up useless shell sessions somehow, use `killall -9 $SHELL` and re-login.
 
-+ On mac os, safari doesn't allow paste if there's no `input` on focus, and `keyCode` in safari is a mess, so copy and paste doesn't work on safari. Use chrome or firefox to use `command+c` to copy and `command+v` paste.
++ On Mac OS, Safari doesn't allow paste if there's no `input` in focus (and `keyCode` in Safari is a mess) so copy and paste doesn't work in Safari. Use Chrome or Firefox to use `command+c` to copy and `command+v` paste.
 
-+ Under some linux distro(Ubuntu for example), `login` need to run as root, so run hterm like this: `sudo hterm 3000`
++ Under some Linux distros (Ubuntu, for example), `login` needs to run as root, so run `hterm` like this: `sudo hterm 3000`.
